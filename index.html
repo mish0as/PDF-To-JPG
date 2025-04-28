@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to JPG Converter</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to High-Quality JPG Converter</h1>
+        
+        <div class="upload-options">
+            <div class="upload-tabs">
+                <button class="upload-tab active" data-tab="drop"><i class="fas fa-cloud-upload-alt"></i> Drop PDF</button>
+                <button class="upload-tab" data-tab="url"><i class="fas fa-link"></i> URL</button>
+            </div>
+            
+            <div class="upload-content">
+                <!-- Drop Area -->
+                <div class="upload-panel active" id="drop-panel">
+                    <div id="dropArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drag & Drop PDF Here</h3>
+                        <p>or click to browse files</p>
+                        <input type="file" id="dropFileInput" accept="application/pdf">
+                    </div>
+                    <div id="dropFileInfo"></div>
+                </div>
+                
+                <!-- URL Upload -->
+                <div class="upload-panel" id="url-panel">
+                    <div class="input-group">
+                        <input type="text" id="urlInput" placeholder="Enter PDF URL (e.g., https://example.com/document.pdf)">
+                        <button id="loadUrlBtn"><i class="fas fa-download"></i> Load PDF</button>
+                        <div id="urlInfo"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="convertBtn" onclick="startConversion()">Convert</button>
+            <button id="downloadZipBtn" onclick="downloadZip()" disabled>Download All as ZIP</button>
+        </div>
+
+        <div id="loading" class="loading-container">
+            <div class="spinner"></div>
+            <div>Loading... Please wait.</div>
+        </div>
+
+        <div id="progressContainer" class="progress-container">
+            <div id="progressText">Converting...</div>
+            <div id="progressBarOuter">
+                <div id="progressBarInner"></div>
+            </div>
+        </div>
+
+        <div id="errorContainer" class="error-container"></div>
+
+        <div id="previewContainer" class="preview-container"></div>
+        
+        <div id="paginationControls" class="pagination-controls">
+            <button onclick="prevPage()">Previous</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button onclick="nextPage()">Next</button>
+        </div>
+
+        <canvas id="pdf-canvas" class="hidden-canvas"></canvas>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
