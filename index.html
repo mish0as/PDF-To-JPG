@@ -45,6 +45,21 @@
             </div>
         </div>
 
+        <!-- Advanced Options -->
+        <div class="advanced-options">
+            <div class="advanced-header">
+                <span>Advanced Options</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="advanced-content">
+                <div class="form-group">
+                    <label for="pageRange">Pages to Convert:</label>
+                    <input type="text" id="pageRange" placeholder="e.g., 1-3,5,7-9">
+                    <small>Leave empty to convert all pages</small>
+                </div>
+            </div>
+        </div>
+
         <div class="button-group">
             <button id="convertBtn" onclick="startConversion()">Convert</button>
             <button id="downloadZipBtn" onclick="downloadZip()" disabled>Download All as ZIP</button>
@@ -73,6 +88,17 @@
         </div>
 
         <canvas id="pdf-canvas" class="hidden-canvas"></canvas>
+ <!-- Stylish Footer -->
+<div class="app-footer">
+    <div class="footer-content">
+      <span class="app-version">v1.0.0</span>
+      <span class="divider">•</span>
+      <span class="copyright">© <span id="current-year"></span> MAS</span>
+      <span class="divider">•</span>
+      <span class="credits">Made with <i class="fas fa-heart pulse"></i></span>
+    </div>
+  </div>
+
     </div>
 
     <script src="script.js"></script>
