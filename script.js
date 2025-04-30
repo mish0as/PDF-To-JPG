@@ -35,7 +35,10 @@ const elements = {
     pdfCanvas: document.getElementById('pdf-canvas'),
     dropArea: document.getElementById('dropArea'),
     uploadTabs: document.querySelectorAll('.upload-tab'),
-    uploadPanels: document.querySelectorAll('.upload-panel')
+    uploadPanels: document.querySelectorAll('.upload-panel'),
+    advancedOptions: document.querySelector('.advanced-options'),
+    advancedHeader: document.querySelector('.advanced-header'),
+    pageRangeInput: document.getElementById('pageRange')
 };
 
 // Initialize PDF.js worker
@@ -85,6 +88,38 @@ function switchUploadMethod(method) {
     elements.downloadZipBtn.disabled = true;
     resetUI();
 }
+
+// Parse page range input (e.g., "1-3,5,7-9")
+function parsePageRange(rangeStr, totalPages) {
+    if (!rangeStr.trim()) {
+        // Return all pages if input is empty
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = new Set();
+    const parts = rangeStr.split(',');
+
+    for (const part of parts) {
+        if (part.includes('-')) {
+            const [start, end] = part.split('-').map(Number);
+            if (isNaN(start) || isNaN(end)) continue;  // Fixed the missing closing parenthesis here
+            const actualStart = Math.max(1, Math.min(start, totalPages));
+            const actualEnd = Math.max(1, Math.min(end, totalPages));
+            for (let i = actualStart; i <= actualEnd; i++) {
+                pages.add(i);
+            }
+        } else {
+            const pageNum = Number(part);
+            if (!isNaN(pageNum)) {
+                const actualPage = Math.max(1, Math.min(pageNum, totalPages));
+                pages.add(actualPage);
+            }
+        }
+    }
+
+    return Array.from(pages).sort((a, b) => a - b);
+}
+
 
 async function startConversion() {
     if (state.conversionInProgress) return;
@@ -149,18 +184,15 @@ async function loadPDFFromUrl(url) {
             throw new Error("Please enter a valid URL");
         }
         
-        if (!url.toLowerCase().endsWith('.pdf')) {
-            throw new Error("URL must point to a PDF file");
-        }
-        
         // Try to fetch the PDF
         const loadingTask = pdfjsLib.getDocument(url);
         state.pdfDoc = await loadingTask.promise;
         
         // Update URL info
         elements.urlInfo.innerHTML = `
-            <span>PDF loaded from URL</span>
+            <span>PDF loaded successfully</span>
             <span>Pages: ${state.pdfDoc.numPages}</span>
+            <span>Source: ${new URL(url).hostname}</span>
         `;
         
         return true;
@@ -180,15 +212,23 @@ async function convertPDF(pdfData) {
             state.pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
         }
         
-        const pageCount = state.pdfDoc.numPages;
+        const totalPages = state.pdfDoc.numPages;
+        const pageRange = elements.pageRangeInput.value.trim();
+        const pagesToConvert = parsePageRange(pageRange, totalPages);
+        
+        if (pagesToConvert.length === 0) {
+            showError("No valid pages selected for conversion");
+            return;
+        }
         
         state.imagesData = [];
         const zip = new JSZip();
         const startTime = Date.now();
 
-        for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+        for (let i = 0; i < pagesToConvert.length; i++) {
             if (!state.conversionInProgress) break;
             
+            const pageNum = pagesToConvert[i];
             const page = await state.pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: config.scale });
             
@@ -213,7 +253,7 @@ async function convertPDF(pdfData) {
             zip.file(`page_${pageNum}.jpg`, imgData.split(',')[1], { base64: true });
             
             // Update progress
-            updateProgress(pageNum, pageCount, startTime);
+            updateProgress(i + 1, pagesToConvert.length, startTime);
         }
         
         if (state.conversionInProgress) {
@@ -256,11 +296,12 @@ function renderPage() {
     
     itemsToShow.forEach((img, index) => {
         const pageNum = start + index + 1;
+        const fileName = img.name.match(/\d+/)[0];
         const div = document.createElement('div');
         div.className = 'preview-item';
         div.innerHTML = `
-            <div class="preview-header">Page ${pageNum}</div>
-            <img src="${img.data}" alt="Page ${pageNum}" loading="lazy">
+            <div class="preview-header">Page ${fileName}</div>
+            <img src="${img.data}" alt="Page ${fileName}" loading="lazy">
             <button class="download-single-btn" onclick="downloadImage('${img.data}', '${img.name}')">
                 Download
             </button>
@@ -335,15 +376,33 @@ async function downloadZip() {
 }
 
 // Event listeners
-elements.dropFileInput.addEventListener('change', () => {
+elements.dropFileInput.addEventListener('change', async () => {
     if (elements.dropFileInput.files.length) {
         const file = elements.dropFileInput.files[0];
         const fileSizeMB = file.size / (1024 * 1024);
         
-        elements.dropFileInfo.innerHTML = `
-            <span>File: ${file.name}</span>
-            <span>Size: ${fileSizeMB.toFixed(2)} MB</span>
-        `;
+        try {
+            // Get page count immediately after file selection
+            const pdfData = await readFileAsArrayBuffer(file);
+            const pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            const pageCount = pdfDoc.numPages;
+            
+            elements.dropFileInfo.innerHTML = `
+                <span>File: ${file.name}</span>
+                <span>Size: ${fileSizeMB.toFixed(2)} MB</span>
+                <span>Pages: ${pageCount}</span>
+            `;
+            
+            // Store the PDF doc for later conversion
+            state.pdfDoc = pdfDoc;
+        } catch (error) {
+            console.error("Error getting page count:", error);
+            elements.dropFileInfo.innerHTML = `
+                <span>File: ${file.name}</span>
+                <span>Size: ${fileSizeMB.toFixed(2)} MB</span>
+                <span style="color: var(--error-color)">Couldn't read page count</span>
+            `;
+        }
         
         elements.downloadZipBtn.disabled = true;
         resetUI();
@@ -395,6 +454,23 @@ elements.uploadTabs.forEach(tab => {
         switchUploadMethod(tab.dataset.tab);
     });
 });
+
+// Advanced options toggle
+elements.advancedHeader.addEventListener('click', () => {
+    elements.advancedOptions.classList.toggle('active');
+});
+
+// Set current year in copyright
+document.getElementById('current-year').textContent = new Date().getFullYear();
+
+// Optional: Add tooltip to version
+const versionElement = document.querySelector('.app-version');
+if (versionElement) {
+  versionElement.title = 'Current version';
+  versionElement.addEventListener('click', () => {
+    console.log('App version: 1.0.0');
+  });
+}
 
 // Initialize
 resetUI();
