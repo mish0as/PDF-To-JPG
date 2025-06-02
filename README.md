@@ -15,7 +15,6 @@ A web-based tool that allows users to convert PDF pages into high-quality JPG im
 - 🖼️ Preview converted images with pagination controls
 - 💻 Responsive and modern UI with icons from Font Awesome and Poppins font
 - 🕶️ Stylish dark/light UI ready (depending on your CSS)
-- Footer with version info and credits
 
 ---
 
@@ -74,17 +73,8 @@ Try the live version here:
 
 ---
 
-## 🧑‍💻 Development
-
-To customize or extend this app, you can modify:
-
-- `script.js` for conversion logic, UI updates, and event handling  
-- `style.css` for styling and responsiveness  
-- `index.html` for structure and layout
 
 ---
-
-## 📄 License
 
 This project is open-source and free to use.
 
